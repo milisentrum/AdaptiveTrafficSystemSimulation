@@ -1,0 +1,16 @@
+{
+    "name": "UnityDevKit.Converters",
+    "rootNamespace": "",
+    "references": [
+        "GUID:ef1fc69d4f808164c9acca524b3427bd"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

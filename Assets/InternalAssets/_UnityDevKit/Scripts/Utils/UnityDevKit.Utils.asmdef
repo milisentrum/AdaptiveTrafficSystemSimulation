@@ -1,0 +1,19 @@
+{
+    "name": "UnityDevKit.Utils",
+    "rootNamespace": "",
+    "references": [
+        "GUID:cb94b7c895e4fc043b475fea0939b6e2",
+        "GUID:78c22fe21ae16ca4d8e2e73ba0f92c00",
+        "GUID:86242bc0f06054044b581e8dfa34a1e2",
+        "GUID:48c9f6afdac61634db0e0f241c7d4d51"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

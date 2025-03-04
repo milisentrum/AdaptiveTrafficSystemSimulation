@@ -1,0 +1,20 @@
+{
+    "name": "UnityDevKit.UI",
+    "rootNamespace": "",
+    "references": [
+        "GUID:78c22fe21ae16ca4d8e2e73ba0f92c00",
+        "GUID:86242bc0f06054044b581e8dfa34a1e2",
+        "GUID:7fe5a1da3b2214f4a8e65adbab9ce2a0",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:48c9f6afdac61634db0e0f241c7d4d51"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

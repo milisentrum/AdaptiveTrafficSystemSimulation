@@ -1,0 +1,17 @@
+{
+    "name": "UnityDevKit.Scenario",
+    "rootNamespace": "",
+    "references": [
+        "GUID:7fe5a1da3b2214f4a8e65adbab9ce2a0",
+        "GUID:78c22fe21ae16ca4d8e2e73ba0f92c00"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

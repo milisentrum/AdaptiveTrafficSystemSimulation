@@ -1,0 +1,17 @@
+{
+    "name": "UnityDevKit.HelpMarks",
+    "rootNamespace": "",
+    "references": [
+        "GUID:b2dac353fed5e394bb62a82ce6af9e00",
+        "GUID:48c9f6afdac61634db0e0f241c7d4d51"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
