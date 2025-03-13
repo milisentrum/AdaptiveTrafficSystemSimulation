@@ -106,7 +106,7 @@ namespace TrafficModule.Vehicle.Extensions
             if (vehicleController.StoppingStates._stoppingInfo.NeedStopByPedestrian)
             {
                 _stoppingState._stoppingInfo.NeedStopByPedestrian = true;
-                Debug.Log("Jam by pedestrians");
+                //Debug.Log("Jam by pedestrians");
             }
 
             if (_vehicleTrafficLighterHandler.IsCrossing)
