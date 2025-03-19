@@ -9,48 +9,50 @@ using System.Threading.Tasks;
 using System;
 using System.IO;
 using System.Threading;
+using AdaptiveTrafficSystem.TrafficLighters;
 
-// --------------------------------------------------------------------------------
-// 1) ЛОГГЕР: MyAsyncLogger
-// --------------------------------------------------------------------------------
+#region LOGGING
 public static class MyAsyncLogger
 {
     private static ConcurrentQueue<string> logQueue = new ConcurrentQueue<string>();
     private static Thread loggingThread;
     private static bool isRunning = false;
-
     private static string logFilePath;
     private static bool isInitialized = false;
+    private static bool isApplicationQuitting = false;
 
     public static void Init()
     {
-        if (isInitialized) return;
+        if (isInitialized || isApplicationQuitting) return;
         logFilePath = Path.Combine(Application.dataPath, "MyAsyncLog.txt");
 
         isRunning = true;
         loggingThread = new Thread(LoggingThreadMethod);
+        loggingThread.IsBackground = true;
         loggingThread.Start();
+
         isInitialized = true;
     }
 
     public static void Log(string message)
     {
+        if (isApplicationQuitting) return;
         if (!isInitialized) Init();
-        EnqueueMessage($"[{DateTime.Now:HH:mm:ss.fff}] [INFO] {message}");
+        logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss.fff}] [INFO] {message}");
     }
 
     public static void LogError(string message)
     {
         if (!isInitialized) Init();
-        EnqueueMessage($"[{DateTime.Now:HH:mm:ss.fff}] [ERROR] {message}");
+        logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss.fff}] [ERROR] {message}");
     }
 
     public static void OnApplicationQuit()
     {
+        isApplicationQuitting = true;
         Shutdown();
     }
 
-    
     private static void LoggingThreadMethod()
     {
         using (var writer = new StreamWriter(logFilePath, true))
@@ -67,28 +69,119 @@ public static class MyAsyncLogger
         }
     }
 
-    private static void EnqueueMessage(string msg)
-    {
-        logQueue.Enqueue(msg);
-    }
-
     public static void Shutdown()
     {
         if (!isRunning) return;
         isRunning = false;
 
-        // Ждем завершения, но с таймаутом
         if (loggingThread != null && loggingThread.IsAlive)
         {
-            //if (!loggingThread.Join(5000)) // 5 сек на завершение
-            //{
-            //    loggingThread.Abort(); // Принудительно убиваем (не рекомендуется, но в крайнем случае)
-            //}
-            loggingThread.Join(2000); // Ждем 2 сек
-            loggingThread = null; // Убираем ссылку на поток
+            loggingThread.Join(2000);
+            loggingThread = null;
         }
     }
 }
+#endregion
+
+#region LOGGINGCSV
+
+public static class MyCsvLogger
+{
+    private static string csvFilePath;
+    private static bool isInitialized = false;
+    private static bool isRunning = false;
+    private static bool isApplicationQuitting = false;
+
+    private static Thread loggingThread;
+    private static ConcurrentQueue<string> csvQueue = new ConcurrentQueue<string>();
+
+    public static void Init()
+    {
+        if (isInitialized || isApplicationQuitting) return;
+
+        csvFilePath = Path.Combine(Application.dataPath, "detections.csv");
+        
+        // Если файл не существует – пишем заголовок. 
+        // Можно поправить поля, если нужно другое количество столбцов:
+        if (!File.Exists(csvFilePath))
+        {
+            File.WriteAllText(csvFilePath, "CameraName;DetectType;TrafficLightState;Count;Timestamp;Duration\n");
+        }
+
+        isRunning = true;
+        loggingThread = new Thread(LoggingThreadMethod);
+        loggingThread.IsBackground = true; 
+        loggingThread.Start();
+
+        isInitialized = true;
+    }
+
+    /// <summary>
+    /// Основной метод фонового потока, где идёт запись в CSV.
+    /// </summary>
+    private static void LoggingThreadMethod()
+    {
+        // Открываем файл в режиме "append" (дописывать в конец).
+        using (var writer = new StreamWriter(csvFilePath, true))
+        {
+            // Пока не остановлены – вычитываем очередь и пишем в файл.
+            while (isRunning)
+            {
+                while (csvQueue.TryDequeue(out string line))
+                {
+                    writer.Write(line); 
+                    // line уже содержит символ новой строки \n
+                }
+                writer.Flush();
+                Thread.Sleep(50);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Записывает строку CSV в очередь (будет сохранена в фоновом потоке).
+    /// </summary>
+    public static void WriteDetection(
+        string cameraName,
+        string detectType,
+        string trafficLightState,
+        int count,
+        string timestamp,
+        float duration)
+    {
+        if (!isInitialized) Init();
+
+        // Формируем строку CSV (с разделителем ";", для Excel в некоторых регионах)
+        string line = $"{cameraName};{detectType};{trafficLightState};{count};{timestamp};{duration}\n";
+        csvQueue.Enqueue(line);
+    }
+
+    /// <summary>
+    /// Гладко останавливает фоновый поток.
+    /// </summary>
+    public static void Shutdown()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+
+        if (loggingThread != null && loggingThread.IsAlive)
+        {
+            loggingThread.Join(2000); 
+            loggingThread = null;
+        }
+    }
+
+    /// <summary>
+    /// Вызывается при выходе из приложения (можно вызвать из OnApplicationQuit).
+    /// </summary>
+    public static void OnApplicationQuit()
+    {
+        isApplicationQuitting = true;
+        Shutdown();
+    }
+}
+
+#endregion
 
 // --------------------------------------------------------------------------------
 // 2) Класс-DTO для парсинга детекций
@@ -96,8 +189,19 @@ public static class MyAsyncLogger
 [Serializable]
 public class DetectionDTO
 {
+    public string trafficLightState; // Состояние светофора (например, "красный", "зеленый")
+    public int count;
+    public string timestamp; // Временная метка
+    public float duration;
+}
+
+// Вспомогательный класс, чтобы распарсить {"count": N} из Python
+[Serializable]
+public class PythonResponseDTO
+{
     public int count;
 }
+
 
 // --------------------------------------------------------------------------------
 // 3) Основной скрипт PythonYOLOMinimal
@@ -121,13 +225,18 @@ public class PythonYOLODetector : MonoBehaviour
     // ZeroMQ
     private RequestSocket requestSocket;
     private RenderTexture captureRT;
-
     private bool isRunning = true; // Флаг для управления корутиной
     private bool shuttingDown = false;
+    
+    //[SerializeField] private TrafficLighter trafficLightCars;
+    //[SerializeField] private TrafficLighter trafficLightPedestrians;
+    [SerializeField] private TrafficLighter trafficLight; // для этой камеры – нужный светофор
+
+    private string lastLightState = "";
+    private float lastLightChangeTime = 0f;
 
     private void Awake()
     {
-        // Инициализация логгера
         if (enableLogging) MyAsyncLogger.Init();
 
         // Создаём RT для камеры
@@ -141,7 +250,7 @@ public class PythonYOLODetector : MonoBehaviour
         requestSocket.Connect("tcp://127.0.0.1:5555");
 
         if (enableLogging) Debug.Log("Подключились к tcp://127.0.0.1:5555");
-        Debug.Log("[YOLO] Connected to Python YOLO server.");
+        //Debug.Log("[YOLO] Connected to Python YOLO server.");
     }
 
     private void Start()
@@ -152,20 +261,14 @@ public class PythonYOLODetector : MonoBehaviour
 
     private void OnDisable()
     {
-        // Вызывается при выключении объекта (или сцены),
-        // но ещё до OnDestroy(). Здесь можно мягко завершить корутины.
-        if (!shuttingDown)
+        if (captureRT != null)
         {
-            shuttingDown = true;
-            StartCoroutine(ShutdownCoroutine());
-            StartCoroutine(WaitForShutdown()); // Ожидание перед выгрузкой сцены
+            captureRT.Release();
+            Destroy(captureRT);
+            captureRT = null;
         }
     }
-    private IEnumerator WaitForShutdown()
-    {
-        yield return new WaitForSeconds(0.5f);
-    }
-
+   
     private void OnApplicationQuit()
     {
         if (!shuttingDown)
@@ -175,29 +278,28 @@ public class PythonYOLODetector : MonoBehaviour
         }
     }
 
-
     private IEnumerator ShutdownCoroutine()
     {
-        isRunning = false; // Останавливаем корутину
+        // Останавливаем корутину отправки кадров
+        isRunning = false;
 
-        yield return new WaitForSeconds(0.1f); // Даем кадру обновиться
+        // Даем время на завершение текущего кадра
+        yield return new WaitForSeconds(0.1f);
 
-        // Останавливаем все корутины, чтобы избежать конфликтов
+        // Останавливаем все корутины, чтобы избежать возможных конфликтов
         StopAllCoroutines();
 
-        // Закрываем и освобождаем сокет запроса
+        // Освобождаем сокет запроса, если он создан
         if (requestSocket != null)
         {
             requestSocket.Dispose();
             requestSocket = null;
         }
 
-        yield return null; // Ждем 1 кадр перед очисткой NetMQ
+        // Ждем один кадр перед дальнейшей очисткой
+        yield return null;
 
-        // Чистим NetMQ (важно делать это после Dispose)
-        NetMQConfig.Cleanup();
-
-        // Освобождаем RenderTexture, если он был создан
+        // Освобождаем RenderTexture, если он создан
         if (captureRT != null)
         {
             captureRT.Release();
@@ -205,32 +307,18 @@ public class PythonYOLODetector : MonoBehaviour
             captureRT = null;
         }
 
-        // Закрываем логгер (если используется асинхронный логгер)
+        // Завершаем асинхронный логгер
         MyAsyncLogger.Shutdown();
 
-        // Дополнительная защита: повторная очистка ZeroMQ (на случай, если остались dangling references)
-        if (requestSocket != null)
-        {
-            requestSocket.Dispose();
-            requestSocket = null;
-        }
-
+        // Очищаем ресурсы NetMQ (вызывается один раз)
         NetMQConfig.Cleanup();
     }
 
-
-
     private string DetermineWantedString()
     {
-        // Пример логики:
-        if (detectPeople && !detectTransport)
-            return "person";
-        else if (!detectPeople && detectTransport)
-            return "transport";
-        return "";
-        //else
-        //    // Если оба включены или оба выключены - ищем все
-        //    return "all";
+        if (detectPeople && !detectTransport) return "person";
+        if (!detectPeople && detectTransport) return "transport";
+        return ""; // или "all"
     }
 
     // --------------------------------------------------------------------------------
@@ -240,38 +328,23 @@ public class PythonYOLODetector : MonoBehaviour
     {
         while (isRunning)
         {
-            //Debug.Log("SendFramesLoop: iteration start...");
             Texture2D frame = CaptureCameraFrame();
             if (frame != null)
             {
                 try
                 {
-                    if (mask != null)
-                    {
-                        ApplyMask(frame, mask);
-                    }
+                    if (mask != null) ApplyMask(frame, mask);
                     byte[] jpgBytes = frame.EncodeToJPG();
-                    Task<int> detectTask = Task.Run(() => SendToPython(jpgBytes));
-                    yield return new WaitUntil(() => detectTask.IsCompleted);
-                    int count = detectTask.Result;
-                    if (enableLogging)
-                        Debug.Log($"Получили детекций: {count}");
+                    int count = SendToPython(jpgBytes);
+                    Debug.Log($"Camera: {targetCamera.name}, Count: {count}");
                 }
                 finally
                 {
                     Destroy(frame);
                 }
             }
-            //Debug.Log("Loop iteration 4...");
-
-            yield return new WaitForSeconds(1f); // раз в секунду
+            yield return new WaitForSeconds(1f);
         }
-    }
-
-    private void DrawBox(Rect rect, Color color)
-    {
-        GUI.color = color;
-        GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill);
     }
 
     // --------------------------------------------------------------------------------
@@ -285,35 +358,91 @@ public class PythonYOLODetector : MonoBehaviour
             return 0;
         }
 
-        // 2) Отправляем
+        // Узнаём, что именно детектируем: "person" или "transport"
         string wanted = DetermineWantedString();
         requestSocket.SendMoreFrame(wanted);
         requestSocket.SendFrame(jpgBytes);
 
-        if (enableLogging) MyAsyncLogger.Log($"Отправлен запрос на детекцию: {wanted}");
-        if (enableLogging) MyAsyncLogger.Log($"Размер отправляемого изображения: {jpgBytes.Length} байт");
+        if (enableLogging)
+            MyAsyncLogger.Log($"Request: {wanted}, image size: {jpgBytes.Length}");
 
-        // 3) Принимаем
-        string reply;
-        bool received = requestSocket.TryReceiveFrameString(TimeSpan.FromSeconds(5), out reply);
+        bool received = requestSocket.TryReceiveFrameString(TimeSpan.FromSeconds(5), out string reply);
         if (!received || string.IsNullOrEmpty(reply) || reply.StartsWith("ERROR:"))
         {
             if (enableLogging) MyAsyncLogger.LogError("Python error: " + reply);
             return 0;
         }
 
-        // 4) Парсим JSON
+        PythonResponseDTO pyResp;
         try
         {
-            DetectionDTO result = JsonConvert.DeserializeObject<DetectionDTO>(reply);
-            return result.count;
+            pyResp = JsonConvert.DeserializeObject<PythonResponseDTO>(reply);
         }
         catch (Exception ex)
         {
             if (enableLogging) Debug.LogError($"JSON parse error: {ex}");
             return 0;
         }
+
+        // Получаем состояние светофора
+        string trafficLightState = GetTrafficLightState();
+        // Рассчитываем, сколько секунд цвет горит (если есть UpdateAndGetDuration)
+        float dur = UpdateAndGetDuration(trafficLightState);
+
+        // Текущая дата/время
+        string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
+        // Собираем DTO, если всё же нужно
+        DetectionDTO result = new DetectionDTO
+        {
+            trafficLightState = trafficLightState,
+            count = pyResp.count,
+            timestamp = timeStamp,
+            duration = dur
+        };
+
+        // Дополнительно определяем название камеры и "тип" (wanted), чтобы записать в CSV
+        string cameraName = (targetCamera != null) ? targetCamera.name : "NoCamera";
+        string detectType = wanted; // "person" или "transport"
+
+        // Пишем в CSV
+        MyCsvLogger.WriteDetection(
+            cameraName,          // Название камеры
+            detectType,          // "person"/"transport"
+            result.trafficLightState,
+            result.count,
+            result.timestamp,
+            result.duration
+        );
+
+        // Если нужно – можно логировать JSON в файл .txt или в консоль
+        // string logJson = JsonConvert.SerializeObject(result);
+        // MyAsyncLogger.Log($"Detections + Light: {logJson}");
+
+        return pyResp.count;
     }
+
+    public string GetTrafficLightState()
+    {
+        // Пример: если просто один светофор
+        if (trafficLight == null) return "no-trafficlight-linked";
+        return trafficLight.GetCurrentLightState();
+    }
+
+    private float UpdateAndGetDuration(string newState)
+    {
+        // Если состояние светофора (red/green/etc.) только что изменилось,
+        // сбрасываем таймер
+        if (newState != lastLightState)
+        {
+            lastLightState = newState;
+            lastLightChangeTime = Time.time;
+        }
+
+        // Возвращаем, сколько секунд уже горит текущий цвет
+        return Time.time - lastLightChangeTime;
+    }
+
 
     // --------------------------------------------------------------------------------
     // Захват кадра с камеры
@@ -375,16 +504,12 @@ public class PythonYOLODetector : MonoBehaviour
     // --------------------------------------------------------------------------------
     private void ApplyMask(Texture2D source, Texture2D maskTex)
     {
-
-        if (enableLogging) SaveDebugImage(source, "original");
         Texture2D maskToUse = maskTex;
 
 
         if (maskTex.width != source.width || maskTex.height != source.height)
         {
             maskToUse = ScaleMaskImage(maskTex, source.width, source.height);
-            // Если маска размером не совпадает с кадром, можно либо не применять,
-            // либо ресайзить маску. Здесь для простоты просто логируем и игнорируем.
             if (enableLogging)
                 Debug.Log("[Mask] Размер маски != размер кадра.");
         }

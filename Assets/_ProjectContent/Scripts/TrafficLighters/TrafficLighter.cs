@@ -78,5 +78,25 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         public float GetSwitchingTimeToGreen() => RED_YELLOW_PHASE_DURATION;
 
         public float GetSwitchingTimeToRed() => YELLOW_PHASE_DURATION; //GREEN_BLINKING_COUNT * GREEN_BLINKING_PERIOD_DURATION * 2;
+
+
+        public string GetCurrentLightState()
+        {
+            bool greenOn = greenLighter.activeSelf;
+            bool yellowOn = yellowLighter.activeSelf;
+            bool redOn = redLighter.activeSelf;
+
+            if (greenOn && !yellowOn && !redOn)
+                return "green";
+            else if (!greenOn && yellowOn && !redOn)
+                return "yellow";
+            else if (!greenOn && !yellowOn && redOn)
+                return "red";
+            else if (!greenOn && yellowOn && redOn)
+                return "red-yellow"; // при переходе на зеленый
+            else
+                return "unknown";    // мигающий, промежуточный и т.п.
+        }
+
     }
 }
