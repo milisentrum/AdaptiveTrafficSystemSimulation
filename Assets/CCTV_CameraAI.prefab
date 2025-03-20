@@ -236,7 +236,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 700100409938280353}
-  - component: {fileID: 8571429783348566363}
+  - component: {fileID: 6316148576436110544}
   m_Layer: 0
   m_Name: Logic
   m_TagString: Untagged
@@ -259,7 +259,7 @@ Transform:
   m_Father: {fileID: 700100411043509106}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8571429783348566363
+--- !u!114 &6316148576436110544
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -268,17 +268,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 700100409938280354}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb667d50c053d4a429c5013812195707, type: 3}
+  m_Script: {fileID: 11500000, guid: ee622ba81324ed6499284757bf4802c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 243540652766707306}
-  mask: {fileID: 2800000, guid: 16abe3a3f18edf443bc1e61c7b3df38a, type: 3}
-  targetSize: 640
-  confidenceThreshold: 0.5
-  iouThreshold: 0.3
-  enableDebugLogging: 0
-  minDetectionArea: 50
-  maxDetectionArea: 130
+  mask: {fileID: 2800000, guid: da6b55946784efb44b3efec98af7846e, type: 3}
+  detectPeople: 0
+  detectTransport: 0
+  enableLogging: 0
 --- !u!1 &700100411043509107
 GameObject:
   m_ObjectHideFlags: 0

@@ -92,3 +92,9 @@ crashlytics-build.properties
 *.zip
 
 _lfs_files
+/Assets/DebugImages
+*.csv
+*.csv.meta
+*.xlsx
+*.xlsx.meta
+Assets/MyAsyncLog.txt
