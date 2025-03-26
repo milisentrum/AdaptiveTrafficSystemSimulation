@@ -21,7 +21,7 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         public bool IsAllClosed() => syncLighters.All(lighter => lighter.GetMode() == TrafficMode.CLOSE);
 
         public bool IsAllOpened() => syncLighters.All(lighter => lighter.GetMode() == TrafficMode.OPEN);
-        
+
         public virtual void SwitchToOpen()
         {
             foreach (var lighter in syncLighters)
