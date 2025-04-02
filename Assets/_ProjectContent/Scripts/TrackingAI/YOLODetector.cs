@@ -10,7 +10,7 @@ using UnityEngine;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using System.Management.Instrumentation;
-using UnityEditor.EditorTools;
+//using UnityEditor.EditorTools;
 
 //#region MyAsyncLogger
 //public static class MyAsyncLogger

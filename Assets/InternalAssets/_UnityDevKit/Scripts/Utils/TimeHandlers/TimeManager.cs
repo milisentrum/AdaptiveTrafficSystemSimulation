@@ -7,7 +7,7 @@ namespace UnityDevKit.Utils.TimeHandlers
 {
 	public class TimeManager : Patterns.Singleton<TimeManager>, IClock
 	{
-		[SerializeField] [PositiveValueOnly] private float startTimeScale = 1;
+		[SerializeField] [PositiveValueOnly] private float startTimeScale = 3;
 		[SerializeField] [PositiveValueOnly] private RangedFloat timeScaleBounds = new RangedFloat { Min = 0.5f, Max = 16f};
 		[SerializeField] [PositiveValueOnly] private float timeScaleStep = 2f;
 		public static float CurrentTimeScale => Time.timeScale;
@@ -32,14 +32,28 @@ namespace UnityDevKit.Utils.TimeHandlers
 			timeScaleBounds = bounds;
 		}
 
-		public void SetTimeMode(float timeScale)
-		{
-			Time.timeScale = timeScale;
-			Debug.Log("Time scale changed to " + Time.timeScale);
-			OnTimeModeChanged.Invoke(CurrentTimeScale);
-		}
+		//public void SetTimeMode(float timeScale)
+		//{
+		//	Time.timeScale = timeScale;
+		//	Debug.Log("Time scale changed to " + Time.timeScale);
+		//	OnTimeModeChanged.Invoke(CurrentTimeScale);
+		//}
 
-		public void SpeedDown()
+        public void SetTimeMode(float timeScale)
+        {
+            // 1) Меняем Time.timeScale
+            Time.timeScale = timeScale;
+
+            // 2) Пропорционально уменьшаем fixedDeltaTime,
+            //    если не хотим задирать нагрузку, можно поставить ограничение
+            Time.fixedDeltaTime = 0.02f / timeScale;
+
+            Debug.Log($"Time scale changed to {Time.timeScale}, fixedDeltaTime={Time.fixedDeltaTime}");
+            OnTimeModeChanged.Invoke(CurrentTimeScale);
+        }
+
+
+        public void SpeedDown()
 		{
 			if (IsPaused) return;
 			var newTimeScale = CurrentTimeScale / timeScaleStep;

@@ -1,6 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 
 public class HideTextInGame : MonoBehaviour
 {
@@ -23,11 +27,14 @@ public class HideTextInGame : MonoBehaviour
 
     }
 
+#if UNITY_EDITOR
     void OnDrawGizmos()
     {
         if (textMesh != null)
         {
-            UnityEditor.Handles.Label(transform.position, textMesh.text);
+            Handles.Label(transform.position, textMesh.text);
         }
     }
+#endif
+
 }

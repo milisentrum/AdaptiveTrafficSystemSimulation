@@ -15,14 +15,14 @@ public class TrafficLightClient : MonoBehaviour
 
     private RequestSocket client;
     private bool isRunning = true;
-
+    
     void Start()
     {
         // Инициализация NetMQ
         AsyncIO.ForceDotNet.Force();
         client = new RequestSocket();
         // Подключаемся к тому же порту, что и сервер
-        client.Connect("tcp://127.0.0.1:5555");
+        client.Connect("tcp://127.0.0.1:5556");
 
         // Запускаем корутину, которая регулярно будет спрашивать у сервера, что включать
         StartCoroutine(RequestStateCoroutine());

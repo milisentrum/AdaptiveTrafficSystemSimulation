@@ -9,6 +9,8 @@ namespace AdaptiveTrafficSystem.TrafficLighters
 {
     public class TL_SyncGroup : MonoBehaviour, ITrafficController
     {
+        [Header("Settings")]
+        [SerializeField] private bool isActive = true;
         [SerializeField] private FloatTriggerEvent openPathTime;
         [SerializeField] private List<TrafficLighter> syncLighters;
 
@@ -19,11 +21,12 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         public EventHolderBase OnSwitchToClose { get; private set; } = new EventHolderBase();
 
         public bool IsAllClosed() => syncLighters.All(lighter => lighter.GetMode() == TrafficMode.CLOSE);
-
         public bool IsAllOpened() => syncLighters.All(lighter => lighter.GetMode() == TrafficMode.OPEN);
 
         public virtual void SwitchToOpen()
         {
+            if (!isActive) return;
+
             foreach (var lighter in syncLighters)
             {
                 lighter.SwitchToOpen();
@@ -34,6 +37,8 @@ namespace AdaptiveTrafficSystem.TrafficLighters
 
         public virtual void SwitchToClose()
         {
+            if (!isActive) return;
+
             foreach (var lighter in syncLighters)
             {
                 lighter.SwitchToClose();
@@ -49,12 +54,16 @@ namespace AdaptiveTrafficSystem.TrafficLighters
 
         public IEnumerator WaitUntilSwitchToOpen()
         {
+            if (!isActive) yield break;
+
             SwitchToOpen();
             yield return WaitUntilOpened();
         }
 
         public IEnumerator WaitUntilSwitchToClose()
         {
+            if (!isActive) yield break;
+
             SwitchToClose();
             yield return WaitUntilClosed();
         }
@@ -74,7 +83,7 @@ namespace AdaptiveTrafficSystem.TrafficLighters
             yield return WaitUntilOpened();
             OnSwitchToOpen.Invoke();
         }
-        
+
         private IEnumerator TriggerCloseEvents()
         {
             yield return WaitUntilClosed();
