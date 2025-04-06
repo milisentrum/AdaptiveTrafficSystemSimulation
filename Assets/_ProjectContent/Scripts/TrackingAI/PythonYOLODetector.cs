@@ -99,7 +99,7 @@ public static class MyCsvLogger
     {
         if (isInitialized || isApplicationQuitting) return;
 
-        csvFilePath = Path.Combine(Application.dataPath, "detections.csv");
+        csvFilePath = Path.Combine(Application.dataPath, "detections_02_04.csv");
         
         // Если файл не существует – пишем заголовок. 
         // Можно поправить поля, если нужно другое количество столбцов:
@@ -255,6 +255,7 @@ public class PythonYOLODetector : MonoBehaviour
 
     private void Start()
     {
+        Application.targetFrameRate = 15; // или 10
         // Запускаем корутину, чтобы каждые N секунд посылать кадр
         StartCoroutine(SendFramesLoop());
     }
