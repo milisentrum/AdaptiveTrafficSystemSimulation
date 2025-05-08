@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 namespace AdaptiveTrafficSystem.TrafficLighters
@@ -8,6 +9,13 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         protected TrafficMode _trafficMode;
 
         private BoxCollider _collider;
+
+        public event Action<TrafficMode> OnModeChanged;
+
+        protected void NotifyModeChanged()
+        {
+            OnModeChanged?.Invoke(_trafficMode);
+        }
 
         private void Awake()
         {
@@ -27,12 +35,14 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         {
             if (_trafficMode == TrafficMode.OPEN) return;
             StartCoroutine(SwitchToGreen());
+            NotifyModeChanged();
         }
 
         public void SwitchToClose()
         {
             if (_trafficMode == TrafficMode.CLOSE) return;
             StartCoroutine(SwitchToRed());
+            NotifyModeChanged();
         }
 
         public TrafficMode GetMode() => _trafficMode;

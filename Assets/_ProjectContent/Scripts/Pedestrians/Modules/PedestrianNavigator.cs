@@ -1,5 +1,6 @@
 ﻿using UnityDevKit.Events;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace AdaptiveTrafficSystem.Pedestrians.Modules
 {
@@ -12,6 +13,16 @@ namespace AdaptiveTrafficSystem.Pedestrians.Modules
         private PedestrianMovement _movement;
 
         private bool _isInitialized;
+
+        //private NavMeshAgent _agent;
+
+        //private void Awake()
+        //{
+        //    _agent = GetComponentInChildren<NavMeshAgent>();
+        //}
+
+        //public void PauseAtRed() => _agent.isStopped = true;
+        //public void ResumeOnGreen() => _agent.isStopped = false;
 
         private void Awake()
         {

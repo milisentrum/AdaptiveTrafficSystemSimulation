@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using UnityEngine;
 using MyBox;
+using UnityEngine;
+using UnityEngine.Events;
+using System;
 
 namespace AdaptiveTrafficSystem.TrafficLighters
 {
@@ -8,13 +11,16 @@ namespace AdaptiveTrafficSystem.TrafficLighters
     {
         [SerializeField] private string lighterID;
         public string LighterID => lighterID;
-        
+
+        [Header("Pedestrian Events")]
+        public UnityEvent OnSwitchedToGreen;
+        public UnityEvent OnSwitchedToRed;
         
         [Separator("Lighters")]
         [SerializeField] private GameObject greenLighter;
         [SerializeField] private GameObject yellowLighter;
         [SerializeField] private GameObject redLighter;
-        
+
         const int GREEN_BLINKING_COUNT = 2;
         const float GREEN_BLINKING_PERIOD_DURATION = 0.5f;
         const int YELLOW_PHASE_DURATION = 1;
@@ -34,23 +40,24 @@ namespace AdaptiveTrafficSystem.TrafficLighters
         {
             _isBlinkingGreen = false;
 
-            
+
             greenLighter.SetActive(false);
             yellowLighter.SetActive(true);
             redLighter.SetActive(true);
             yield return new WaitForSeconds(RED_YELLOW_PHASE_DURATION);
             ActivateGreenLighter();
             _trafficMode = TrafficMode.OPEN;
+            OnSwitchedToGreen?.Invoke();
         }
 
         protected override IEnumerator SwitchToRed()
         {
             yellowLighter.SetActive(false);
             redLighter.SetActive(false);
-            
+
             _isBlinkingGreen = true;
 
-            
+
             var c = GREEN_BLINKING_COUNT;
             while (c > 0)
             {
@@ -62,11 +69,12 @@ namespace AdaptiveTrafficSystem.TrafficLighters
             }
             _isBlinkingGreen = false;
 
-            
+
             greenLighter.SetActive(false);
             yellowLighter.SetActive(true);
             redLighter.SetActive(false);
             _trafficMode = TrafficMode.CLOSE;
+            OnSwitchedToGreen?.Invoke();
             yield return new WaitForSeconds(YELLOW_PHASE_DURATION);
             ActivateRedLighter();
         }

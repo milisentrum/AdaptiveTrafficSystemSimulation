@@ -12,6 +12,8 @@ public class Photographer : MonoBehaviour
     public int outputHeight = 720; // Âûñîòà èçîáðàæåíèÿ
     public int jpegQuality = 75;   // Êà÷åñòâî JPEG (1-100)
     public bool convertToGrayScale = true;
+    public List<GameObject> cars = new List<GameObject>();     // classId = 0
+    public List<GameObject> people = new List<GameObject>();   // classId = 1
 
     // Ïóòü ê cwebp.exe (óñòàíîâè ïóòü â ñîîòâåòñòâèè ñ ðàñïîëîæåíèåì òâîåãî ôàéëà)
     public string cwebpPath = @"C:\traffic_light\AdaptiveTrafficSystemSimulation\Assets\Plugins\libwebp\cwebp.exe";
@@ -36,56 +38,94 @@ public class Photographer : MonoBehaviour
 
     public void CaptureImage(string trafficLightId)
     {
-        // Íàñòðîèì RenderTexture ñ óìåíüøåííûì ðàçðåøåíèåì
         RenderTexture renderTexture = new RenderTexture(outputWidth, outputHeight, 24);
         camera.targetTexture = renderTexture;
 
-        // Ñîçäàåì òåêñòóðó äëÿ ÷òåíèÿ ïèêñåëåé
         Texture2D screenShot = new Texture2D(outputWidth, outputHeight, TextureFormat.RGB24, false);
         camera.Render();
 
-        // Ñ÷èòûâàåì ïèêñåëè ñ RenderTexture
         RenderTexture.active = renderTexture;
         screenShot.ReadPixels(new Rect(0, 0, outputWidth, outputHeight), 0, 0);
         screenShot.Apply();
 
-        // Îñâîáîæäàåì RenderTexture
         camera.targetTexture = null;
         RenderTexture.active = null;
         Destroy(renderTexture);
 
-        // Åñëè âêëþ÷åíà ãàëî÷êà äëÿ ïðåîáðàçîâàíèÿ â ñåðûé, ïðèìåíÿåì ïðåîáðàçîâàíèå
         if (convertToGrayScale)
         {
             screenShot = ConvertToGrayScale(screenShot);
         }
 
-        // Óáåäèìñÿ, ÷òî ïàïêà ñóùåñòâóåò
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
         }
 
         string timestamp = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-        // Ãåíåðèðóåì èìÿ ôàéëà äëÿ âðåìåííîãî JPEG
         string tempFileName = $"{folderPath}/{trafficLightId}_{timestamp}-photo.jpg";
-
-        // Ñîõðàíÿåì èçîáðàæåíèå â JPEG
         File.WriteAllBytes(tempFileName, screenShot.EncodeToJPG(jpegQuality));
 
-        // Òåïåðü êîíâåðòèðóåì JPEG â WebP ñ ïîìîùüþ cwebp
         string webpFileName = $"{folderPath}/{trafficLightId}_{timestamp}-photo.webp";
         ConvertToWebP(tempFileName, webpFileName);
 
-        // Óäàëÿåì âðåìåííûé JPEG ôàéë
+        // === Объединяем людей и машины ===
+        List<(GameObject obj, int classId)> targets = new List<(GameObject, int)>();
+        foreach (var car in cars) if (car != null) targets.Add((car, 0));
+        foreach (var person in people) if (person != null) targets.Add((person, 1));
+
+        string labelFileName = $"{folderPath}/{trafficLightId}_{timestamp}-photo.txt";
+        List<string> yoloLabels = new List<string>();
+
+        foreach (var (obj, classId) in targets)
+        {
+            Renderer renderer = obj.GetComponent<Renderer>();
+            if (renderer == null) continue;
+
+            Bounds bounds = renderer.bounds;
+            Vector3[] corners = new Vector3[8];
+
+            corners[0] = bounds.min;
+            corners[1] = new Vector3(bounds.min.x, bounds.min.y, bounds.max.z);
+            corners[2] = new Vector3(bounds.min.x, bounds.max.y, bounds.min.z);
+            corners[3] = new Vector3(bounds.max.x, bounds.min.y, bounds.min.z);
+            corners[4] = new Vector3(bounds.max.x, bounds.max.y, bounds.min.z);
+            corners[5] = new Vector3(bounds.max.x, bounds.min.y, bounds.max.z);
+            corners[6] = new Vector3(bounds.min.x, bounds.max.y, bounds.max.z);
+            corners[7] = bounds.max;
+
+            float minX = float.MaxValue, minY = float.MaxValue;
+            float maxX = float.MinValue, maxY = float.MinValue;
+
+            foreach (var corner in corners)
+            {
+                Vector3 screenPoint = camera.WorldToScreenPoint(corner);
+                screenPoint.y = outputHeight - screenPoint.y;
+
+                minX = Mathf.Min(minX, screenPoint.x);
+                minY = Mathf.Min(minY, screenPoint.y);
+                maxX = Mathf.Max(maxX, screenPoint.x);
+                maxY = Mathf.Max(maxY, screenPoint.y);
+            }
+
+            minX = Mathf.Clamp(minX, 0, outputWidth);
+            maxX = Mathf.Clamp(maxX, 0, outputWidth);
+            minY = Mathf.Clamp(minY, 0, outputHeight);
+            maxY = Mathf.Clamp(maxY, 0, outputHeight);
+
+            float bboxWidth = maxX - minX;
+            float bboxHeight = maxY - minY;
+            float x_center = (minX + bboxWidth / 2f) / outputWidth;
+            float y_center = (minY + bboxHeight / 2f) / outputHeight;
+
+            string label = $"{classId} {x_center:F6} {y_center:F6} {bboxWidth / outputWidth:F6} {bboxHeight / outputHeight:F6}";
+            yoloLabels.Add(label);
+        }
+
+        File.WriteAllLines(labelFileName, yoloLabels.ToArray());
+
         File.Delete(tempFileName);
-
-        UnityEngine.Debug.Log($"Ñîõðàíåíî èçîáðàæåíèå: {webpFileName}");
-
-        // Äîïîëíèòåëüíî, ñîõðàíÿåì ìåòàäàííûå (ïî æåëàíèþ)
-        string metaFileName = $"{folderPath}/{trafficLightId}_{timestamp}-meta.txt";
-        File.WriteAllText(metaFileName, "Camera settings or other metadata");
+        UnityEngine.Debug.Log($"✅ Сохранено изображение: {webpFileName}");
     }
 
     // Ìåòîä äëÿ êîíâåðòàöèè èçîáðàæåíèÿ â WebP ÷åðåç cwebp

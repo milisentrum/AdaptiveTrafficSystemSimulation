@@ -2,12 +2,13 @@
 using UnityEngine;
 using AdaptiveTrafficSystem.Pedestrians.Modules;
 using MyBox;
+using AdaptiveTrafficSystem.TrafficLighters;
 
 namespace AdaptiveTrafficSystem.Pedestrians
 {
     public class PedestriansNavigationSystem : MonoBehaviour
     {
-        [SerializeField] [InitializationField] private List<PedestrianNavigator> controlledPedestrians;
+        [SerializeField][InitializationField] private List<PedestrianNavigator> controlledPedestrians;
         [SerializeField] private List<Transform> pathPoints;
 
         private void Start()
@@ -40,7 +41,7 @@ namespace AdaptiveTrafficSystem.Pedestrians
             controlledPedestrians.Remove(pedestrianNavigator);
             pedestrianNavigator.OnDestinationReached.RemoveListener(GiveNewDestination);
         }
-        
+
         public void AddControlledPedestrianWithDestination(GameObject pedestrian)
         {
             var pedestrianNavigator = pedestrian.GetComponentInChildren<PedestrianNavigator>();
@@ -72,3 +73,4 @@ namespace AdaptiveTrafficSystem.Pedestrians
         private Vector3 SelectRandomPoint() => pathPoints.GetRandom().position;
     }
 }
+

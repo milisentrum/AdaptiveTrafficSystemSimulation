@@ -101,3 +101,7 @@ Assets/MyAsyncLog.txt
 Assets/_ProjectContent/Prefabs/Crossroad_Main/CrossroadMain.prefab
 Assets/_ProjectContent/Prefabs/Crossroad_Main/CrossroadMain.prefab.meta
 /ServerBuild
+*.webp
+/TrafficLightImages
+
+/TrafficLightImages

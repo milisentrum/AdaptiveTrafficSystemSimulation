@@ -4,6 +4,7 @@ using TrafficModule.Vehicle;
 using TrafficModule.Waypoints;
 using UnityDevKit.Triggers;
 using UnityEngine;
+//using global::AgentController;  // <— add this line
 
 namespace TrafficModule.Managers
 {
@@ -67,6 +68,10 @@ namespace TrafficModule.Managers
             var prototype = vehiclesPool[Random.Range(0, vehiclesPool.Count)];
             var newVehicle = Instantiate(prototype, vehicleHolder.transform, false);
             newVehicle.SetActive(true);
+            // 1) На лету цепляем AgentController
+            //if (newVehicle.GetComponent<AgentController>() == null)
+            //    newVehicle.AddComponent<AgentController>();
+
             newVehicle.name = $"{prototype.name}_{_vehiclesLastIndex}";
             _vehiclesLastIndex++;
             _vehiclesList.Add(newVehicle);
@@ -79,6 +84,37 @@ namespace TrafficModule.Managers
                 newVehicleController.carDestroyed.AddListener(RespawnNewCar);
             }
         }
+
+        //private void CreateVehicle(Waypoint newCarSpawnWaypoint)
+        //{
+        //    // 1) Выбираем случайный prototype и создаём его под holder
+        //    var prototype = vehiclesPool[Random.Range(0, vehiclesPool.Count)];
+        //    var newVehicle = Instantiate(prototype, vehicleHolder.transform, false);
+
+        //    // 2) Делаем объект активным
+        //    newVehicle.SetActive(true);
+
+        //    // 3) На лету цепляем AgentController, если его нет
+        //    if (newVehicle.GetComponent<AgentController>() == null)
+        //    {
+        //        newVehicle.AddComponent<AgentController>();
+        //    }
+
+        //    // 4) Присваиваем имя, заносим в список
+        //    newVehicle.name = $"{prototype.name}_{_vehiclesLastIndex}";
+        //    _vehiclesLastIndex++;
+        //    _vehiclesList.Add(newVehicle);
+
+        //    // 5) Старая логика инициализации VehicleController
+        //    var newVehicleController = newVehicle.GetComponent<VehicleController>();
+        //    newVehicleController.Init();
+        //    newVehicleController.SetupStartWaypoint(newCarSpawnWaypoint);
+        //    if (respawnNewVehicles)
+        //    {
+        //        newVehicleController.carDestroyed.AddListener(RespawnNewCar);
+        //    }
+        //}
+
 
         private void RespawnNewCar()
         {
